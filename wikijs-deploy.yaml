@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wikijs
+  namespace: ns-wiki
+  labels:
+    app: wikijs
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: wikijs
+  template:
+    metadata:
+      labels:
+        app: wikijs
+    spec:
+      containers:
+      - name: wikijs
+        image: requarks/wiki:latest
+        imagePullPolicy: Always
+        env:
+        - name: DB_TYPE
+          value: "mariadb"
+        - name: DB_HOST
+          value: "mariadb.ns-wiki.svc.cluster.local"
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: maria-database-secret
+              key: DATABASE
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: maria-database-secret
+              key: USER
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: maria-database-secret
+              key: PASSWORD
+        # - name: CONFIG_FILE
+        #   value: "/var/wiki/config.yml"
+        # - name: GIT_ENABLED
+        #   value: "True"
+        # - name: GIT_REMOTE
+        #   value: "git@ssh.dev.azure.com:v3/biswajitgiri/car_purchase/car_purchase.wiki"
+        # - name: GIT_PASS
+        #   value: "/.sshkey/key"
+        # - name: GIT_BRANCH
+        #   value: "wikiMaster"
+
+        volumeMounts:
+          - mountPath: /.sshkey
+            name: sshkey
+            readOnly: false
+          # - mountPath: /var/wiki
+          #   name: gitconfig
+          #   readOnly: false
+        ports:
+        - containerPort: 3000
+          name: http
+      volumes:
+        - name: sshkey
+          secret:
+            secretName: wikijs-ssh-secret
+        # - name: gitconfig
+        #   configMap:
+        #     name: wikijs-git-config
